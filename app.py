@@ -4,6 +4,7 @@ import numpy as np
 import plotly.express as px
 from pathlib import Path
 import re
+import plotly.graph_objects as go
 
 st.set_page_config(page_title="Valencia Dashboard", layout="wide")
 st.title("Valencia CF — Análisis estadístico")
@@ -327,17 +328,61 @@ with tab_rivales:
     else:
         st.info("No existe columna 'condicion' para mostrar el split.")
 
-    st.markdown("#### Evolución del rendimiento frente al rival (PPG)")
-    if "temporada" in df_rival.columns and len(df_rival) > 0:
-        by_temp_r = df_rival.groupby("temporada", as_index=False).agg(Puntos=("puntos", "sum"), PJ=("puntos", "count"))
-        by_temp_r["PPG"] = by_temp_r["Puntos"] / by_temp_r["PJ"]
-        by_temp_r = by_temp_r.sort_values(by="temporada", key=lambda s: s.map(temporada_start_year).fillna(0))
-        fig_line_r = px.line(by_temp_r, x="temporada", y="PPG", markers=True,
-                             labels={"temporada": "Temporada", "PPG": "Puntos por partido"})
-        fig_line_r.update_layout(margin=dict(l=10, r=10, t=10, b=10), xaxis_tickangle=-45, height=340)
-        st.plotly_chart(fig_line_r, use_container_width=True)
+    st.markdown("#### Evolución del rendimiento frente al rival (PPG) — líneas comparadas")
+
+    if "temporada" in df_rival.columns and "puntos" in df_rival.columns and len(df_rival) > 0:
+        tmp = df_rival.copy()
+    
+        # Puntos del rival (desde el punto de vista del Valencia)
+        # 3->0, 1->1, 0->3
+        tmp["puntos_rival"] = np.where(
+            pd.to_numeric(tmp["puntos"], errors="coerce") == 3, 0,
+            np.where(pd.to_numeric(tmp["puntos"], errors="coerce") == 1, 1,
+                     np.where(pd.to_numeric(tmp["puntos"], errors="coerce") == 0, 3, np.nan))
+        )
+    
+        agg = tmp.groupby("temporada", as_index=False).agg(
+            Puntos_VCF=("puntos", "sum"),
+            Puntos_Rival=("puntos_rival", "sum"),
+            PJ=("puntos", "count")
+        )
+        agg["PPG_VCF"] = agg["Puntos_VCF"] / agg["PJ"]
+        agg["PPG_Rival"] = agg["Puntos_Rival"] / agg["PJ"]
+    
+        # Orden cronológico de temporadas
+        agg = agg.sort_values(by="temporada", key=lambda s: s.map(temporada_start_year).fillna(0))
+    
+        x = agg["temporada"]
+    
+        fig = go.Figure()
+        # Línea 1: Valencia
+        fig.add_trace(go.Scatter(
+            x=x, y=agg["PPG_VCF"], mode="lines+markers", name="Valencia",
+            line=dict(width=2),
+            hovertemplate="Temporada: %{x}<br>PPG Valencia: %{y:.2f}<extra></extra>"
+        ))
+    
+        # Línea 2: Rival + sombreado entre líneas
+        fig.add_trace(go.Scatter(
+            x=x, y=agg["PPG_Rival"], mode="lines+markers", name=rival_sel,
+            line=dict(width=2),
+            fill="tonexty",  # sombreado entre esta y la traza anterior
+            opacity=0.2,
+            hovertemplate=f"Temporada: %{{x}}<br>PPG {rival_sel}: %{{y:.2f}}<extra></extra>"
+        ))
+    
+        fig.update_layout(
+            margin=dict(l=10, r=10, t=10, b=10),
+            height=380,
+            xaxis_title="Temporada",
+            yaxis_title="Puntos por partido",
+            xaxis_tickangle=-45,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0)
+        )
+        st.plotly_chart(fig, use_container_width=True)
     else:
-        st.info("No hay datos de temporadas suficientes para este rival.")
+        st.info("No hay datos suficientes para calcular PPG por temporada frente a este rival.")
+
 
     st.markdown("#### Resultados frente a este rival (matriz)")
     if "goles_valencia" in df_rival.columns and "goles_rival" in df_rival.columns and len(df_rival) > 0:
