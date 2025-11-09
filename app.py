@@ -549,18 +549,18 @@ with tab_records:
         st.info("Bloque de 'Contexto temporal' oculto: el filtro actual no contiene datos de franja.")
 
         # ---------- Rival (todo en texto con el formato dado) ----------
-        st.markdown("### Rival")
+    st.markdown("### Rival")
     
-        if "rival" in df.columns and len(df) > 0:
-            agg_r = df.groupby("rival").agg(
-                PJ=("puntos", "count"),
-                GF=("goles_valencia", "mean"),
-                GC=("goles_rival", "mean"),
-                PPG=("puntos", "mean")
-            ).reset_index()
+    if "rival" in df.columns and len(df) > 0:
+        agg_r = df.groupby("rival").agg(
+             PJ=("puntos", "count"),
+            GF=("goles_valencia", "mean"),
+            GC=("goles_rival", "mean"),
+            PPG=("puntos", "mean")
+        ).reset_index()
     
             # Mínimo de partidos para evitar outliers
-            agg_r = agg_r[agg_r["PJ"] >= 3] if len(agg_r) else agg_r
+        agg_r = agg_r[agg_r["PJ"] >= 3] if len(agg_r) else agg_r
 
         if len(agg_r) > 0:
             # Rival que más goles nos hace (promedio GC)
