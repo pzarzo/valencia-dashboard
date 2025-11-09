@@ -543,4 +543,92 @@ with tab_records:
     else:
         st.info("Bloque de 'Contexto temporal' oculto: el filtro actual no contiene datos de franja.")
 
+        # ---------- Rival (todo en texto con el formato dado) ----------
+    st.markdown("### Rival")
+
+    if "rival" in df.columns and len(df) > 0:
+        agg_r = df.groupby("rival").agg(
+            PJ=("puntos", "count"),
+            GF=("goles_valencia", "mean"),
+            GC=("goles_rival", "mean"),
+            PPG=("puntos", "mean")
+        ).reset_index()
+
+        # Mínimo de partidos para evitar outliers
+        agg_r = agg_r[agg_r["PJ"] >= 3] if len(agg_r) else agg_r
+
+        if len(agg_r) > 0:
+            # Rival que más goles nos hace (promedio GC)
+            r_gc = agg_r.loc[agg_r["GC"].idxmax()]
+            st.markdown(
+                f"Rival que más goles nos hace (promedio Goles a Favor): "
+                f"**{r_gc['rival']} · Goles a favor medio: {r_gc['GC']:.2f} (Partidos Jugados: {int(r_gc['PJ'])})**"
+            )
+
+            # Rival más goleado por el VCF (promedio GF del VCF)
+            r_gf = agg_r.loc[agg_r["GF"].idxmax()]
+            st.markdown(
+                f"Rival más goleado (promedio Goles a Favor del VCF): "
+                f"**{r_gf['rival']} · Goles a favor medio: {r_gf['GF']:.2f} (Partidos Jugados: {int(r_gf['PJ'])})**"
+            )
+
+            # Mejor PPG contra un rival
+            r_ppg = agg_r.loc[agg_r["PPG"].idxmax()]
+            st.markdown(
+                f"Mejor Puntos por partido (PPG) contra un rival: "
+                f"**{r_ppg['rival']} · PPG: {r_ppg['PPG']:.2f} (Partidos Jugados: {int(r_ppg['PJ'])})**"
+            )
+        else:
+            st.info("No hay suficientes partidos por rival para calcular promedios (mín. 3 PJ).")
+    else:
+        st.info("No hay datos de rivales para este filtro.")
+
+        st.divider()
+
+    # ---------- Curiosidades adicionales (todo texto) ----------
+    st.markdown("### Curiosidades adicionales")
+
+    # Temporada con mejor PPG
+    if "temporada" in df.columns and "puntos" in df.columns and len(df) > 0:
+        by_t = df.groupby("temporada").agg(Puntos=("puntos", "sum"), PJ=("puntos", "count")).reset_index()
+        by_t["PPG"] = by_t["Puntos"] / by_t["PJ"]
+        best_ppg = by_t.loc[by_t["PPG"].idxmax()]
+        st.markdown(
+            f"Temporada con mejor Puntos por partido (PPG): "
+            f"**{best_ppg['temporada']} · PPG: {best_ppg['PPG']:.2f}**"
+        )
+
+    # Temporada con más derrotas
+    res_der = None
+    if "resultado_valencia" in df.columns:
+        res_der = df["resultado_valencia"].astype(str).str.lower().str.startswith("der")
+    elif "puntos" in df.columns:
+        res_der = (pd.to_numeric(df["puntos"], errors="coerce") == 0)
+    if res_der is not None and "temporada" in df.columns:
+        t_der = df.assign(D=res_der).groupby("temporada")["D"].sum().reset_index(name="Derrotas")
+        if len(t_der) > 0:
+            worst = t_der.loc[t_der["Derrotas"].idxmax()]
+            st.markdown(
+                f"Temporada con más derrotas: **{worst['temporada']} · Derrotas: {int(worst['Derrotas'])}**"
+            )
+
+    # Empates 0-0
+    if "goles_valencia" in df.columns and "goles_rival" in df.columns:
+        emp00 = df[
+            (pd.to_numeric(df["goles_valencia"], errors="coerce") == 0) &
+            (pd.to_numeric(df["goles_rival"], errors="coerce") == 0)
+        ]
+        st.markdown(f"Empates 0-0: **{len(emp00)}**")
+
+    # Porterías a cero (rival no marca)
+    if "goles_rival" in df.columns:
+        porterias_cero = (pd.to_numeric(df["goles_rival"], errors="coerce") == 0).sum()
+        st.markdown(f"Porterías a cero (rival no marca): **{int(porterias_cero)}**")
+
+    # Victorias por 3+ goles de diferencia
+    if "diferencia_goles" in df.columns:
+        goleadas = (pd.to_numeric(df["diferencia_goles"], errors="coerce") >= 3).sum()
+        st.markdown(f"Victorias por 3+ goles de diferencia: **{int(goleadas)}**")
+
+    
            
