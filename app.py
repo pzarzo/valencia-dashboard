@@ -271,15 +271,6 @@ with tab_resumen:
         st.info("No hay partidos con los filtros actuales.")
 
 # ======= Rivales =======
-# Debug temporal: cuenta Ida/Vuelta y NaN
-if "vuelta" in df_rival.columns:
-    st.caption(f"Ida/Vuelta (conteo): {df_rival['vuelta'].value_counts(dropna=False).to_dict()}")
-    if "partido_id" in df_rival.columns:
-        dup = df_rival.duplicated(subset="partido_id").sum()
-        if dup:
-            st.warning(f"Partidos duplicados en este corte (por partido_id): {dup}")
-
-
 with tab_rivales:
     st.subheader("Resumen por rival")
     if "rival" not in df_full.columns:
