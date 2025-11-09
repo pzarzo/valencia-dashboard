@@ -118,12 +118,22 @@ def compute_kpis(df: pd.DataFrame) -> dict:
         "PJ": pj, "Puntos": pts, "PPG": ppg, "%V": pv,
         "GF": gf, "GC": gc, "DG": dg, "V": v, "E": e, "D": d
     }
-# ---- derivar 'vuelta' desde 'fase_temporada' (1=Ida, 2=Vuelta) ----
+# --- Normalizar Ida/Vuelta desde fase_temporada ---
 if "fase_temporada" in df_full.columns:
     df_full["vuelta"] = (
         pd.to_numeric(df_full["fase_temporada"], errors="coerce")
         .map({1: "Ida", 2: "Vuelta"})
     )
+
+# Validar valores permitidos únicamente
+if "vuelta" in df_full.columns:
+    df_full["vuelta"] = df_full["vuelta"].where(df_full["vuelta"].isin(["Ida", "Vuelta"]))
+
+# --- Eliminar posibles duplicados de partidos ---
+if "partido_id" in df_full.columns:
+    before = len(df_full)
+    df_full = df_full.drop_duplicates(subset="partido_id").reset_index(drop=True)
+    # st.caption(f"Depurados duplicados de partido_id: {before} → {len(df_full)}")  # opcional debug
 
 # ---------- Filtros (sidebar) ----------
 st.sidebar.header("Filtros")
@@ -180,9 +190,9 @@ if sel_franjas and "franja" in df.columns:
     df = df[df["franja"].isin(sel_franjas)]
 if use_dates and f_ini and f_fin and "fecha" in df.columns:
     df = df[(df["fecha"] >= pd.to_datetime(f_ini)) & (df["fecha"] <= pd.to_datetime(f_fin))]
-
-if "vuelta" in df.columns and len(sel_vuelta) > 0:
+if "vuelta" in df.columns and sel_vuelta:
     df = df[df["vuelta"].isin(sel_vuelta)]
+
 
 # ------- tabs -------
 tab_resumen, tab_rivales, tab_records = st.tabs(["Resumen estadístico", "Enfrentamientos", "Datos destacados"])
@@ -261,6 +271,15 @@ with tab_resumen:
         st.info("No hay partidos con los filtros actuales.")
 
 # ======= Rivales =======
+# Debug temporal: cuenta Ida/Vuelta y NaN
+if "vuelta" in df_rival.columns:
+    st.caption(f"Ida/Vuelta (conteo): {df_rival['vuelta'].value_counts(dropna=False).to_dict()}")
+    if "partido_id" in df_rival.columns:
+        dup = df_rival.duplicated(subset="partido_id").sum()
+        if dup:
+            st.warning(f"Partidos duplicados en este corte (por partido_id): {dup}")
+
+
 with tab_rivales:
     st.subheader("Resumen por rival")
     if "rival" not in df_full.columns:
