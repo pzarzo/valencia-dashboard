@@ -534,17 +534,6 @@ with tab_records:
                     f"Franja con mayor % de victorias: **{t.iloc[0]['franja']} · "
                     f"{t.iloc[0]['%Victorias']:.1f}% ·  Partidos jugados: {int(t.iloc[0]['PJ'])}**"
                 )
-'''
-        # Temporada más goleadora (goles a favor)
-        if "temporada" in df.columns and "goles_valencia" in df.columns and len(df) > 0:
-            tmp = df.groupby("temporada")["goles_valencia"].sum().reset_index()
-            top = tmp.loc[tmp["goles_valencia"].idxmax()]
-            st.markdown(
-                f"Temporada más goleadora (goles a favor): **{top['temporada']} · "
-                f"Goles: {int(top['goles_valencia'])}**"
-            )
-'''
-    
     else:
         st.info("Bloque de 'Contexto temporal' oculto: el filtro actual no contiene datos de franja.")
 
