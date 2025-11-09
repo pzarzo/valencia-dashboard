@@ -121,6 +121,12 @@ def compute_kpis(df: pd.DataFrame) -> dict:
 # ---------- Filtros (sidebar) ----------
 st.sidebar.header("⚙️ Filtros")
 
+# Construir la lista de temporadas (ordenada)
+temporadas = (
+    sort_temporadas(df_full["temporada"].dropna().unique().tolist())
+    if "temporada" in df_full.columns else []
+)
+
 sel_temporadas = st.sidebar.multiselect("Temporada(s)", temporadas, default=[])
 
 
