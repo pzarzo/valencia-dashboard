@@ -121,19 +121,29 @@ def compute_kpis(df: pd.DataFrame) -> dict:
 # ---------- Filtros (sidebar) ----------
 st.sidebar.header("⚙️ Filtros")
 
-temporadas = sort_temporadas(df_full["temporada"].dropna().unique().tolist()) if "temporada" in df_full.columns else []
-temporadas_opts = ["Todas"] + temporadas
-sel_temporadas = st.sidebar.multiselect("Temporada(s)", temporadas_opts, default=[])
-if "Todas" in sel_temporadas:
-    sel_temporadas = temporadas
+sel_temporadas = st.sidebar.multiselect("Temporada(s)", temporadas, default=[])
+
 
 condiciones = sorted(df_full["condicion"].dropna().unique().tolist()) if "condicion" in df_full.columns else []
 sel_condicion = st.sidebar.multiselect("Condición", condiciones, default=[])
 
+# Ida / Vuelta
+if "vuelta" in df_full.columns:
+    vueltas = sorted(df_full["vuelta"].dropna().unique().tolist())
+elif "jornada_num" in df_full.columns:
+    df_full["vuelta"] = np.where(pd.to_numeric(df_full["jornada_num"], errors="coerce") <= 19, "Ida", "Vuelta")
+    vueltas = ["Ida", "Vuelta"]
+else:
+    vueltas = []
+
+sel_vuelta = st.sidebar.multiselect("Vuelta", vueltas, default=[])
+
+
 rivales = sorted(df_full["rival"].dropna().unique().tolist()) if "rival" in df_full.columns else []
 sel_rivales = st.sidebar.multiselect("Rival(es)", rivales, default=[])
 
-franjas = sorted(df_full.get("franja", pd.Series(dtype=str)).dropna().unique().tolist()) if "franja" in df_full.columns else []
+franjas_raw = sorted(df_full.get("franja", pd.Series(dtype=str)).dropna().unique().tolist()) if "franja" in df_full.columns else []
+franjas = [f for f in franjas_raw if f not in ("Desconocida", "nan")]
 sel_franjas = st.sidebar.multiselect("Franja (desde 2019)", franjas, default=[]) if franjas else []
 
 use_dates = False
@@ -151,6 +161,9 @@ if "fecha" in df_full.columns and df_full["fecha"].notna().any():
         f_ini = f_fin = None
 else:
     f_ini = f_fin = None
+if sel_vuelta and "vuelta" in df.columns:
+    df = df[df["vuelta"].isin(sel_vuelta)]
+
 
 # Aplicar filtros
 df = df_full.copy()
