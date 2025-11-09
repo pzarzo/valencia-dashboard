@@ -413,8 +413,8 @@ with tab_rivales:
     
         st.plotly_chart(fig, use_container_width=True)
 
-else:
-    st.info("No hay datos suficientes para calcular PPG por temporada frente a este rival.")
+    else:
+        st.info("No hay datos suficientes para calcular PPG por temporada frente a este rival.")
 
 
     st.markdown("#### Resultados frente a este rival (matriz)")
