@@ -519,7 +519,7 @@ with tab_records:
         # Texto para las 2 últimas
         if "puntos" in df.columns:
             res_v = (pd.to_numeric(df["puntos"], errors="coerce") == 3)
-                        t = df.assign(V=res_v).groupby("franja").agg(
+            t = df.assign(V=res_v).groupby("franja").agg(
                 PJ=("V", "count"),
                 V=("V", "sum")
             ).reset_index()
