@@ -131,7 +131,7 @@ if use_dates and f_ini and f_fin and "fecha" in df.columns:
 # ------- tabs -------
 tab_resumen, tab_rivales, tab_records = st.tabs(["📌 Resumen", "🤝 Rivales (Head-to-Head)", "📈 Datos destacados"])
 
-    with tab_resumen:
+with tab_resumen:
     st.subheader("Indicadores generales")
     k = compute_kpis(df)
     c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
