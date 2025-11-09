@@ -481,7 +481,7 @@ with tab_records:
     has_hora = ("hora" in df.columns) and pd.to_datetime(df["hora"], errors="coerce").notna().any()
 
     if has_franja and has_hora:
-        st.header("Contexto temporal", anchor=False)
+        st.markdown("### Contexto temporal")
 
         # Tabla para 2 primeras
         ctx_rows = []
@@ -534,7 +534,7 @@ with tab_records:
                     f"Franja con mayor % de victorias: **{t.iloc[0]['franja']} · "
                     f"{t.iloc[0]['%Victorias']:.1f}% ·  Partidos jugados: {int(t.iloc[0]['PJ'])}**"
                 )
-
+'''
         # Temporada más goleadora (goles a favor)
         if "temporada" in df.columns and "goles_valencia" in df.columns and len(df) > 0:
             tmp = df.groupby("temporada")["goles_valencia"].sum().reset_index()
@@ -543,6 +543,7 @@ with tab_records:
                 f"Temporada más goleadora (goles a favor): **{top['temporada']} · "
                 f"Goles: {int(top['goles_valencia'])}**"
             )
+            '''
     else:
         st.info("Bloque de 'Contexto temporal' oculto: el filtro actual no contiene datos de franja.")
 
@@ -602,18 +603,21 @@ with tab_records:
         )
 
     # Temporada con más derrotas
+    # Temporada con más derrotas (oculta si el máximo es 0 o NaN)
     res_der = None
-    if "resultado_valencia" in df.columns:
-        res_der = df["resultado_valencia"].astype(str).str.lower().str.startswith("der")
+    if "resultado_valencia" in df.columns and df["resultado_valencia"].notna().any():
+        s = df["resultado_valencia"].astype(str).str.lower().str.strip()
+        res_der = s.str.startswith("der")
     elif "puntos" in df.columns:
         res_der = (pd.to_numeric(df["puntos"], errors="coerce") == 0)
+    
     if res_der is not None and "temporada" in df.columns:
         t_der = df.assign(D=res_der).groupby("temporada")["D"].sum().reset_index(name="Derrotas")
         if len(t_der) > 0:
             worst = t_der.loc[t_der["Derrotas"].idxmax()]
-            st.markdown(
-                f"Temporada con más derrotas: **{worst['temporada']} · Derrotas: {int(worst['Derrotas'])}**"
-            )
+            if pd.notna(worst["Derrotas"]) and int(worst["Derrotas"]) > 0:
+                st.markdown(f"Temporada con más derrotas: **{worst['temporada']} · Derrotas: {int(worst['Derrotas'])}**")
+            # si el máximo es 0, no mostramos nada
 
     # Empates 0-0
     if "goles_valencia" in df.columns and "goles_rival" in df.columns:
@@ -632,6 +636,13 @@ with tab_records:
     if "diferencia_goles" in df.columns:
         goleadas = (pd.to_numeric(df["diferencia_goles"], errors="coerce") >= 3).sum()
         st.markdown(f"Victorias por 3+ goles de diferencia: **{int(goleadas)}**")
+
+    # Temporada más goleadora (goles a favor)
+if "temporada" in df.columns and "goles_valencia" in df.columns and len(df) > 0:
+    tmp = df.groupby("temporada")["goles_valencia"].sum().reset_index()
+    top = tmp.loc[tmp["goles_valencia"].idxmax()]
+    st.markdown(f"Temporada más goleadora (goles a favor): **{top['temporada']} · Goles: {int(top['goles_valencia'])}**")
+
 
     
            
