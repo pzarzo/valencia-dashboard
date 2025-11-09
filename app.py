@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 
 st.set_page_config(page_title="Valencia Dashboard", layout="wide")
-st.title("Valencia CF — Análisis estadístico")
+st.title("Valencia CF — Carlota guapa")
 
 @st.cache_data
 def load_data(path: str) -> pd.DataFrame:
