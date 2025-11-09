@@ -333,18 +333,14 @@ with tab_rivales:
     if "temporada" in df_rival.columns and "puntos" in df_rival.columns and len(df_rival) > 0:
         tmp = df_rival.copy()
     
-        # Calcular puntos del rival (desde el punto de vista del Valencia)
+        # Puntos del rival vistos desde el Valencia: 3→0, 1→1, 0→3
+        pts = pd.to_numeric(tmp["puntos"], errors="coerce")
         tmp["puntos_rival"] = np.select(
-            [
-                tmp["puntos"] == 3,
-                tmp["puntos"] == 1,
-                tmp["puntos"] == 0
-            ],
+            [pts == 3, pts == 1, pts == 0],
             [0, 1, 3],
             default=np.nan
         )
     
-        # Agrupar por temporada
         agg = tmp.groupby("temporada", as_index=False).agg(
             Puntos_VCF=("puntos", "sum"),
             Puntos_Rival=("puntos_rival", "sum"),
@@ -353,54 +349,32 @@ with tab_rivales:
         agg["PPG_VCF"] = agg["Puntos_VCF"] / agg["PJ"]
         agg["PPG_Rival"] = agg["Puntos_Rival"] / agg["PJ"]
     
-        # Ordenar cronológicamente
+        # Orden cronológico
         agg = agg.sort_values(by="temporada", key=lambda s: s.map(temporada_start_year).fillna(0))
         x = agg["temporada"]
     
-        # Crear gráfico
         fig = go.Figure()
     
-        # Línea Valencia
+        # Línea Valencia (azul oscuro)
         fig.add_trace(go.Scatter(
             x=x, y=agg["PPG_VCF"],
             mode="lines+markers",
             name="Valencia",
-            line=dict(color="#003366", width=3),
-            marker=dict(size=6),
-            hovertemplate="Temporada: %{x}<br>Valencia PPG: %{y:.2f}<extra></extra>"
+            line=dict(color="#0D47A1", width=3),   # sólido
+            marker=dict(size=6, symbol="circle"),
+            hovertemplate="Temporada: %{x}<br>PPG Valencia: %{y:.2f}<extra></extra>"
         ))
     
-        # Línea rival
+        # Línea Rival (magenta)
         fig.add_trace(go.Scatter(
             x=x, y=agg["PPG_Rival"],
             mode="lines+markers",
             name=rival_sel,
-            line=dict(color="#1F77B4", width=3, dash="dot"),
-            marker=dict(size=6),
-            hovertemplate=f"Temporada: %{{x}}<br>{rival_sel} PPG: %{{y:.2f}}<extra></extra>"
+            line=dict(color="#D81B60", width=3),   # sólido (sin punteado)
+            marker=dict(size=6, symbol="square"),
+            hovertemplate=f"Temporada: %{{x}}<br>PPG {rival_sel}: %{{y:.2f}}<extra></extra>"
         ))
     
-        # Añadir sombreado donde Valencia supera al rival
-        fig.add_trace(go.Scatter(
-            x=x,
-            y=np.maximum(agg["PPG_VCF"], agg["PPG_Rival"]),
-            fill=None,
-            mode='lines',
-            line=dict(width=0),
-            showlegend=False
-        ))
-        fig.add_trace(go.Scatter(
-            x=x,
-            y=np.minimum(agg["PPG_VCF"], agg["PPG_Rival"]),
-            fill='tonexty',
-            mode='lines',
-            line=dict(width=0),
-            fillcolor="rgba(0,102,204,0.15)",
-            showlegend=False,
-            hoverinfo='skip'
-        ))
-    
-        # Diseño del gráfico
         fig.update_layout(
             height=380,
             margin=dict(l=10, r=10, t=10, b=10),
@@ -412,10 +386,8 @@ with tab_rivales:
         )
     
         st.plotly_chart(fig, use_container_width=True)
-
     else:
         st.info("No hay datos suficientes para calcular PPG por temporada frente a este rival.")
-
 
     st.markdown("#### Resultados frente a este rival (matriz)")
     if "goles_valencia" in df_rival.columns and "goles_rival" in df_rival.columns and len(df_rival) > 0:
