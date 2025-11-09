@@ -519,4 +519,28 @@ with tab_records:
         # Texto para las 2 últimas
         if "puntos" in df.columns:
             res_v = (pd.to_numeric(df["puntos"], errors="coerce") == 3)
+                        t = df.assign(V=res_v).groupby("franja").agg(
+                PJ=("V", "count"),
+                V=("V", "sum")
+            ).reset_index()
+            t["%Victorias"] = np.where(t["PJ"] > 0, t["V"] / t["PJ"] * 100, np.nan)
+            t = t.sort_values("%Victorias", ascending=False)
+
+            if len(t) > 0 and pd.notna(t.iloc[0]["%Victorias"]):
+                st.markdown(
+                    f"Franja con mayor % de victorias: **{t.iloc[0]['franja']} · "
+                    f"{t.iloc[0]['%Victorias']:.1f}% ·  Partidos jugados: {int(t.iloc[0]['PJ'])}**"
+                )
+
+        # Temporada más goleadora (goles a favor)
+        if "temporada" in df.columns and "goles_valencia" in df.columns and len(df) > 0:
+            tmp = df.groupby("temporada")["goles_valencia"].sum().reset_index()
+            top = tmp.loc[tmp["goles_valencia"].idxmax()]
+            st.markdown(
+                f"Temporada más goleadora (goles a favor): **{top['temporada']} · "
+                f"Goles: {int(top['goles_valencia'])}**"
+            )
+    else:
+        st.info("Bloque de 'Contexto temporal' oculto: el filtro actual no contiene datos de franja.")
+
            
