@@ -141,7 +141,7 @@ sel_condicion = st.sidebar.multiselect("Condición", condiciones, default=[])
 
 # --- Ida / Vuelta (usar columna ya creada) ---
 vueltas = sorted(df_full["vuelta"].dropna().unique().tolist()) if "vuelta" in df_full.columns else []
-sel_vuelta = st.sidebar.multiselect("Vuelta", vueltas, default=[])
+sel_vuelta = st.sidebar.multiselect("Ida/Vuelta", vueltas, default=[])
 
 
 rivales = sorted(df_full["rival"].dropna().unique().tolist()) if "rival" in df_full.columns else []
@@ -149,7 +149,7 @@ sel_rivales = st.sidebar.multiselect("Rival(es)", rivales, default=[])
 
 franjas_raw = sorted(df_full.get("franja", pd.Series(dtype=str)).dropna().unique().tolist()) if "franja" in df_full.columns else []
 franjas = [f for f in franjas_raw if f not in ("Desconocida", "nan")]
-sel_franjas = st.sidebar.multiselect("Franja (desde 2019)", franjas, default=[]) if franjas else []
+sel_franjas = st.sidebar.multiselect("Franja horaria (desde 2019)", franjas, default=[]) if franjas else []
 
 use_dates = False
 if "fecha" in df_full.columns and df_full["fecha"].notna().any():
@@ -184,7 +184,7 @@ if "vuelta" in df.columns and len(sel_vuelta) > 0:
     df = df[df["vuelta"].isin(sel_vuelta)]
 
 # ------- tabs -------
-tab_resumen, tab_rivales, tab_records = st.tabs(["📌 Resumen", "🤝 Rivales (Head-to-Head)", "📈 Datos destacados"])
+tab_resumen, tab_rivales, tab_records = st.tabs(["Resumen estadístico", "Enfrentamientos", "Datos destacados"])
 
 # ======= Resumen =======
 with tab_resumen:
@@ -214,7 +214,7 @@ with tab_resumen:
         st.info("No hay datos suficientes para calcular puntos por temporada.")
 
     # 2) V/E/D por temporada (recuento)
-    st.markdown("### 🟩 Victorias, empates y derrotas por temporada")
+    st.markdown("### Victorias, empates y derrotas por temporada")
     if len(df) > 0 and "temporada" in df.columns:
         res = infer_result_series(df)
         temp_res = df.assign(Res=res).groupby(["temporada", "Res"]).size().reset_index(name="Partidos")
@@ -228,7 +228,7 @@ with tab_resumen:
         st.info("No hay datos suficientes para calcular resultados por temporada.")
 
     # 3) Matriz
-    st.markdown("### 🔥 Matriz de marcadores (Goles VCF × Goles Rival)")
+    st.markdown("### Matriz de marcadores (Goles VCF × Goles Rival)")
     if "goles_valencia" in df.columns and "goles_rival" in df.columns and len(df) > 0:
         mat = pd.crosstab(df["goles_valencia"], df["goles_rival"])
         if mat.size == 0:
@@ -242,7 +242,7 @@ with tab_resumen:
         st.info("No hay datos suficientes para generar la matriz de marcadores.")
 
     st.divider()
-    st.markdown("### 🗂️ Lista de partidos según filtros")
+    st.markdown("### Lista de partidos según filtros")
     if len(df) > 0:
         show_cols_pref = [
             "fecha", "temporada", "competicion", "jornada_num", "condicion",
