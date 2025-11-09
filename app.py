@@ -166,11 +166,6 @@ if "fecha" in df_full.columns and df_full["fecha"].notna().any():
         f_ini = f_fin = None
 else:
     f_ini = f_fin = None
-if "vuelta" in df.columns and len(sel_vuelta) > 0:
-    df = df[df["vuelta"].isin(sel_vuelta)]
-
-
-
 
 # Aplicar filtros
 df = df_full.copy()
@@ -184,6 +179,9 @@ if sel_franjas and "franja" in df.columns:
     df = df[df["franja"].isin(sel_franjas)]
 if use_dates and f_ini and f_fin and "fecha" in df.columns:
     df = df[(df["fecha"] >= pd.to_datetime(f_ini)) & (df["fecha"] <= pd.to_datetime(f_fin))]
+
+if "vuelta" in df.columns and len(sel_vuelta) > 0:
+    df = df[df["vuelta"].isin(sel_vuelta)]
 
 # ------- tabs -------
 tab_resumen, tab_rivales, tab_records = st.tabs(["📌 Resumen", "🤝 Rivales (Head-to-Head)", "📈 Datos destacados"])
