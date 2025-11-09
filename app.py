@@ -476,9 +476,12 @@ with tab_records:
 
     # ---------- Contexto temporal ----------
     # Ocultar este bloque si no hay franja en el subset
-    has_franja = ("franja" in df.columns) and df["franja"].notna().any()
-    if has_franja:
-        st.markdown("### Contexto temporal")
+    valid_franjas = {"Mediodía", "Tarde", "Vespertina", "Noche"}
+    has_franja = ("franja" in df.columns) and df["franja"].isin(valid_franjas).any()
+    has_hora = ("hora" in df.columns) and pd.to_datetime(df["hora"], errors="coerce").notna().any()
+
+    if has_franja and has_hora:
+        st.header("Contexto temporal", anchor=False)
 
         # Tabla para 2 primeras
         ctx_rows = []
