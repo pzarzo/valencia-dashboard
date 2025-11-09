@@ -271,6 +271,26 @@ with tab_resumen:
         st.info("No hay partidos con los filtros actuales.")
 
 # ======= Rivales =======
+
+# Base de H2H = df ya filtrado globalmente
+df_h2h = df.copy()
+
+# Normalizar vuelta SOLO para esta pestaña:
+valid_v = {"Ida", "Vuelta"}
+if "vuelta" in df_h2h.columns:
+    if sel_vuelta:  # el usuario ha elegido Ida/Vuelta en el sidebar
+        df_h2h = df_h2h[df_h2h["vuelta"].isin(sel_vuelta)]
+    else:
+        # sin selección de Ida/Vuelta, excluimos los NaN u otras etiquetas raras
+        df_h2h = df_h2h[df_h2h["vuelta"].isin(valid_v)]
+# Desplegable del rival dentro del tab (usar SIEMPRE df_h2h)
+rivales_h2h = sorted(df_h2h["rival"].dropna().unique().tolist())
+rival_sel = st.selectbox("Elige un rival", rivales_h2h, index=0 if rivales_h2h else 0)
+
+# Subconjunto del rival elegido
+df_rival = df_h2h[df_h2h["rival"] == rival_sel]
+
+
 with tab_rivales:
     st.subheader("Resumen por rival")
     if "rival" not in df_full.columns:
