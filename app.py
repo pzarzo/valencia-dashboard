@@ -272,35 +272,20 @@ with tab_resumen:
 
 # ======= Rivales =======
 
-# Base de H2H = df ya filtrado globalmente
-df_h2h = df.copy()
-
-# Normalizar vuelta SOLO para esta pestaña:
-valid_v = {"Ida", "Vuelta"}
-if "vuelta" in df_h2h.columns:
-    if sel_vuelta:  # el usuario ha elegido Ida/Vuelta en el sidebar
-        df_h2h = df_h2h[df_h2h["vuelta"].isin(sel_vuelta)]
-    else:
-        # sin selección de Ida/Vuelta, excluimos los NaN u otras etiquetas raras
-        df_h2h = df_h2h[df_h2h["vuelta"].isin(valid_v)]
-# Desplegable del rival dentro del tab (usar SIEMPRE df_h2h)
-rivales_h2h = sorted(df_h2h["rival"].dropna().unique().tolist())
-rival_sel = st.selectbox("Elige un rival", rivales_h2h, index=0 if rivales_h2h else 0)
-
-# Subconjunto del rival elegido
-df_rival = df_h2h[df_h2h["rival"] == rival_sel]
-
-
-with tab_rivales:
-    st.subheader("Resumen por rival")
-    if "rival" not in df_full.columns:
-        st.warning("No existe columna 'rival' en el dataset.")
-        st.stop()
-
-    df_rank = df.copy()
+    # --- Base H2H coherente con Ida/Vuelta ---
+    df_h2h = df.copy()
+    if "vuelta" in df_h2h.columns:
+        if sel_vuelta:  # si el usuario eligió Ida/Vuelta, respétalo
+            df_h2h = df_h2h[df_h2h["vuelta"].isin(sel_vuelta)]
+        else:
+            # sin selección, excluye NaN/etiquetas raras para que cuadre con Ida+Vuelta
+            df_h2h = df_h2h[df_h2h["vuelta"].isin(["Ida", "Vuelta"])]
+    
+    # A partir de aquí, TODO H2H trabaja con df_h2h
+    df_rank = df_h2h.copy()
     res_s = infer_result_series(df_rank)
     df_rank = df_rank.assign(Res=res_s)
-
+    
     agg = df_rank.groupby("rival").agg(
         PJ=("puntos", "count"),
         Puntos=("puntos", "sum"),
@@ -314,25 +299,14 @@ with tab_rivales:
     agg["DG"] = agg["GF"] - agg["GC"]
     agg["%V"] = np.where(agg["PJ"] > 0, agg["V"] / agg["PJ"] * 100, np.nan)
     agg = agg.sort_values(by=["PJ", "PPG"], ascending=[False, False])
-
-    st.dataframe(agg, use_container_width=True, height=420)
-    st.download_button(
-        "⬇️ Descargar ranking rivales",
-        data=agg.to_csv(index=False).encode("utf-8"),
-        file_name="ranking_rivales.csv",
-        mime="text/csv"
-    )
-
-    st.divider()
-    st.subheader("Detalles del rival seleccionado")
-
+    
     rivals_list = agg["rival"].tolist()
     if len(rivals_list) == 0:
         st.info("No hay rivales para mostrar con los filtros actuales.")
         st.stop()
 
     rival_sel = st.selectbox("Elige un rival", rivals_list, index=0)
-    df_rival = df_rank[df_rank["rival"] == rival_sel]
+    df_rival = df_h2h[df_h2h["rival"] == rival_sel]
 
     k_rival = compute_kpis(df_rival)
     c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
