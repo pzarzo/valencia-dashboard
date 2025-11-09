@@ -544,8 +544,8 @@ with tab_records:
                 f"Goles: {int(top['goles_valencia'])}**"
             )
             '''
-        else:
-            st.info("Bloque de 'Contexto temporal' oculto: el filtro actual no contiene datos de franja.")
+    else:
+        st.info("Bloque de 'Contexto temporal' oculto: el filtro actual no contiene datos de franja.")
 
         # ---------- Rival (todo en texto con el formato dado) ----------
         st.markdown("### Rival")
