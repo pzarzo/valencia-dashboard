@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 
 st.set_page_config(page_title="Valencia Dashboard", layout="wide")
-st.title("📊 Valencia CF — Dashboard (MVP)")
+st.title("Valencia CF — Análisis estadístico")
 
 @st.cache_data
 def load_data(path: str) -> pd.DataFrame:
@@ -336,7 +336,7 @@ with tab_rivales:
 
 # ======= Datos destacados =======
 with tab_records:
-    st.subheader("Estos datos se calculan según los filtros seleccionados (temporada, rival, franja, fechas).")
+    st.subheader("")
 
     # ---------- Goles y resultados extremos (tabla completa) ----------
     st.markdown("### Goles y resultados extremos")
