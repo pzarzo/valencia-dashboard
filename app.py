@@ -151,30 +151,27 @@ with tab_resumen:
 
     st.divider()
 
-    st.markdown("### 📈 PPG por temporada")
-    if len(df)>0 and "puntos" in df.columns and "temporada" in df.columns:
-        by_temp = df.groupby("temporada", as_index=False).agg(Puntos=("puntos","sum"), PJ=("puntos","count"))
-        by_temp["PPG"] = by_temp["Puntos"] / by_temp["PJ"]
-        by_temp = by_temp.sort_values(by="temporada", key=lambda s: s.map(temporada_start_year).fillna(0))
-        fig_line = px.line(by_temp, x="temporada", y="PPG", markers=True, labels={"temporada":"Temporada","PPG":"Puntos por partido"})
-        fig_line.update_layout(margin=dict(l=10,r=10,t=10,b=10), xaxis_tickangle=-45, height=360)
-        st.plotly_chart(fig_line, use_container_width=True)
-    else:
-        st.info("No hay datos suficientes para calcular PPG por temporada.")
+    st.markdown("### 📈 Puntos totales por temporada")
+if len(df)>0 and "puntos" in df.columns and "temporada" in df.columns:
+    by_temp_pts = df.groupby("temporada", as_index=False).agg(Puntos=("puntos","sum"))
+    by_temp_pts = by_temp_pts.sort_values(by="temporada", key=lambda s: s.map(temporada_start_year).fillna(0))
+    fig_pts = px.bar(by_temp_pts, x="temporada", y="Puntos", labels={"temporada":"Temporada","Puntos":"Puntos"}, title=None)
+    fig_pts.update_layout(margin=dict(l=10,r=10,t=10,b=10), xaxis_tickangle=-45, height=380)
+    st.plotly_chart(fig_pts, use_container_width=True)
+else:
+    st.info("No hay datos suficientes para calcular puntos por temporada.")
 
-    st.markdown("### 🟦 %V/E/D por temporada")
-    if len(df)>0 and "temporada" in df.columns:
-        res = infer_result_series(df)
-        temp_res = df.assign(Res=res).groupby(["temporada","Res"]).size().reset_index(name="PJ")
-        temp_total = temp_res.groupby("temporada")["PJ"].transform("sum")
-        temp_res["%"] = temp_res["PJ"]/temp_total*100
-        temp_res["Res"] = temp_res["Res"].map({"V":"Victoria","E":"Empate","D":"Derrota","?":"Desconocido"})
-        temp_res = temp_res.sort_values(by="temporada", key=lambda s: s.map(temporada_start_year).fillna(0))
-        fig_bar = px.bar(temp_res, x="temporada", y="%", color="Res", labels={"temporada":"Temporada","%":"Porcentaje","Res":"Resultado"})
-        fig_bar.update_layout(barmode="stack", margin=dict(l=10,r=10,t=10,b=10), xaxis_tickangle=-45, height=420)
-        st.plotly_chart(fig_bar, use_container_width=True)
-    else:
-        st.info("No hay datos suficientes para calcular %V/E/D por temporada.")
+    st.markdown("### 🟩 Victorias, empates y derrotas por temporada")
+if len(df)>0 and "temporada" in df.columns:
+    res = infer_result_series(df)
+    temp_res = df.assign(Res=res).groupby(["temporada","Res"]).size().reset_index(name="Partidos")
+    temp_res["Res"] = temp_res["Res"].map({"V":"Victoria","E":"Empate","D":"Derrota","?":"Desconocido"})
+    temp_res = temp_res.sort_values(by="temporada", key=lambda s: s.map(temporada_start_year).fillna(0))
+    fig_bar = px.bar(temp_res, x="temporada", y="Partidos", color="Res", labels={"temporada":"Temporada","Partidos":"Partidos","Res":"Resultado"})
+    fig_bar.update_layout(barmode="stack", margin=dict(l=10,r=10,t=10,b=10), xaxis_tickangle=-45, height=460)
+    st.plotly_chart(fig_bar, use_container_width=True)
+else:
+    st.info("No hay datos suficientes para calcular resultados por temporada.")
 
     st.markdown("### 🔥 Matriz de marcadores (Goles VCF × Goles Rival)")
     if "goles_valencia" in df.columns and "goles_rival" in df.columns and len(df)>0:
