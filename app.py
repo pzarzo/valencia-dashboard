@@ -125,7 +125,7 @@ if "fase_temporada" in df_full.columns:
     )
 
 # ---------- Filtros (sidebar) ----------
-st.sidebar.header("⚙️ Filtros")
+st.sidebar.header("Filtros")
 
 # Construir la lista de temporadas (ordenada)
 temporadas = (
@@ -202,7 +202,7 @@ with tab_resumen:
     st.divider()
 
     # 1) Puntos totales por temporada
-    st.markdown("### 📈 Puntos totales por temporada")
+    st.markdown("### Puntos totales por temporada")
     if len(df) > 0 and "puntos" in df.columns and "temporada" in df.columns:
         by_temp_pts = df.groupby("temporada", as_index=False).agg(Puntos=("puntos", "sum"))
         by_temp_pts = by_temp_pts.sort_values(by="temporada", key=lambda s: s.map(temporada_start_year).fillna(0))
