@@ -543,7 +543,8 @@ with tab_records:
                 f"Temporada más goleadora (goles a favor): **{top['temporada']} · "
                 f"Goles: {int(top['goles_valencia'])}**"
             )
-            '''
+'''
+    
     else:
         st.info("Bloque de 'Contexto temporal' oculto: el filtro actual no contiene datos de franja.")
 
