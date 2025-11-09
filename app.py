@@ -117,6 +117,12 @@ def compute_kpis(df: pd.DataFrame) -> dict:
         "PJ": pj, "Puntos": pts, "PPG": ppg, "%V": pv,
         "GF": gf, "GC": gc, "DG": dg, "V": v, "E": e, "D": d
     }
+# ---- derivar 'vuelta' desde 'fase_temporada' (1=Ida, 2=Vuelta) ----
+if "fase_temporada" in df_full.columns:
+    df_full["vuelta"] = (
+        pd.to_numeric(df_full["fase_temporada"], errors="coerce")
+        .map({1: "Ida", 2: "Vuelta"})
+    )
 
 # ---------- Filtros (sidebar) ----------
 st.sidebar.header("⚙️ Filtros")
@@ -133,18 +139,8 @@ sel_temporadas = st.sidebar.multiselect("Temporada(s)", temporadas, default=[])
 condiciones = sorted(df_full["condicion"].dropna().unique().tolist()) if "condicion" in df_full.columns else []
 sel_condicion = st.sidebar.multiselect("Condición", condiciones, default=[])
 
-# --- Ida / Vuelta (crear siempre el selector) ---
-if "vuelta" in df_full.columns:
-    vueltas = sorted(df_full["vuelta"].dropna().unique().tolist())
-elif "jornada_num" in df_full.columns:
-    df_full["vuelta"] = np.where(
-        pd.to_numeric(df_full["jornada_num"], errors="coerce") <= 19,
-        "Ida", "Vuelta"
-    )
-    vueltas = ["Ida", "Vuelta"]
-else:
-    vueltas = ["Ida", "Vuelta"]  # si no hay columna, al menos muestra el selector
-
+# --- Ida / Vuelta (usar columna ya creada) ---
+vueltas = sorted(df_full["vuelta"].dropna().unique().tolist()) if "vuelta" in df_full.columns else []
 sel_vuelta = st.sidebar.multiselect("Vuelta", vueltas, default=[])
 
 
@@ -172,6 +168,7 @@ else:
     f_ini = f_fin = None
 if "vuelta" in df.columns and len(sel_vuelta) > 0:
     df = df[df["vuelta"].isin(sel_vuelta)]
+
 
 
 
