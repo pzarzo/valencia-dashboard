@@ -646,11 +646,11 @@ with tab_records:
         st.markdown(f"Victorias por 3+ goles de diferencia: **{int(goleadas)}**")
 
     # Temporada más goleadora (goles a favor)
-if "temporada" in df.columns and "goles_valencia" in df.columns and len(df) > 0:
-    tmp = df.groupby("temporada")["goles_valencia"].sum().reset_index()
-    top = tmp.loc[tmp["goles_valencia"].idxmax()]
-    st.markdown(f"Temporada más goleadora (goles a favor): **{top['temporada']} · Goles: {int(top['goles_valencia'])}**")
-
+    if "temporada" in df.columns and "goles_valencia" in df.columns and len(df) > 0:
+        tmp = df.groupby("temporada")["goles_valencia"].sum().reset_index()
+        top = tmp.loc[tmp["goles_valencia"].idxmax()]
+        st.markdown(f"Temporada más goleadora (goles a favor): **{top['temporada']} · Goles: {int(top['goles_valencia'])}**")
+    
 
     
            
