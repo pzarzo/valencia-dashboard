@@ -127,11 +127,11 @@ if sel_franjas and "franja" in df.columns:
 if use_dates and f_ini and f_fin and "fecha" in df.columns:
     df = df[(df["fecha"] >= pd.to_datetime(f_ini)) & (df["fecha"] <= pd.to_datetime(f_fin))]
 
-# ------- tabs -------
-tab_resumen, tab_rivales = st.tabs(["📌 Resumen", "🤝 Rivales (Head-to-Head)"])
 
-# ======= Resumen =======
-with tab_resumen:
+# ------- tabs -------
+tab_resumen, tab_rivales, tab_records = st.tabs(["📌 Resumen", "🤝 Rivales (Head-to-Head)", "📈 Datos destacados"])
+
+    with tab_resumen:
     st.subheader("Indicadores generales")
     k = compute_kpis(df)
     c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
@@ -284,3 +284,182 @@ with tab_rivales:
             st.plotly_chart(fig_heat_r, use_container_width=True)
     else:
         st.info("No hay suficientes datos para la matriz de marcadores vs el rival seleccionado.")
+
+    # ======= Datos destacados =======
+    with tab_records:
+        st.subheader("Goles y resultados extremos")
+
+        def show_match_record(title: str, row):
+            if row is None or len(row)==0:
+                st.write(f"**{title}:** —")
+                return
+            vals = []
+            def fmt_score(r):
+                try:
+                    return f"{int(r.get('goles_valencia', 0))}-{int(r.get('goles_rival', 0))}"
+                except Exception:
+                    return f"{r.get('goles_valencia')} - {r.get('goles_rival')}"
+            vals.append(f"**{title}:** {row.get('temporada','')} · {row.get('fecha','')} · {row.get('condicion','')} vs {row.get('rival','')} · Resultado: {fmt_score(row)}")
+            extra = []
+            if 'competicion' in row: extra.append(f"Competición: {row['competicion']}")
+            if 'resultado_valencia' in row and pd.notna(row['resultado_valencia']): extra.append(f"Resultado: {row['resultado_valencia']}")
+            if extra:
+                vals.append(" · ".join(extra))
+            st.write("  
+".join(vals))
+
+        df_rec = df.copy()
+
+        # 1) Más goles a favor
+        row_max_gf = None
+        if "goles_valencia" in df_rec.columns and len(df_rec)>0:
+            row_max_gf = df_rec.loc[df_rec["goles_valencia"].idxmax()].to_dict()
+        show_match_record("Partido con más goles a favor del Valencia", row_max_gf)
+
+        # 2) Más goles en contra
+        row_max_gc = None
+        if "goles_rival" in df_rec.columns and len(df_rec)>0:
+            row_max_gc = df_rec.loc[df_rec["goles_rival"].idxmax()].to_dict()
+        show_match_record("Partido con más goles en contra", row_max_gc)
+
+        # 3) Más goles totales
+        row_max_tot = None
+        if "goles_valencia" in df_rec.columns and "goles_rival" in df_rec.columns and len(df_rec)>0:
+            tmp = df_rec.assign(goles_totales = pd.to_numeric(df_rec["goles_valencia"], errors="coerce") + pd.to_numeric(df_rec["goles_rival"], errors="coerce"))
+            row_max_tot = tmp.loc[tmp["goles_totales"].idxmax()].to_dict()
+        show_match_record("Partido con más goles totales", row_max_tot)
+
+        # 4) Mayor victoria (DG max)
+        row_max_dg = None
+        if "diferencia_goles" in df_rec.columns and len(df_rec)>0:
+            row_max_dg = df_rec.loc[df_rec["diferencia_goles"].idxmax()].to_dict()
+        show_match_record("Mayor victoria del Valencia", row_max_dg)
+
+        # 5) Derrota más abultada (DG min)
+        row_min_dg = None
+        if "diferencia_goles" in df_rec.columns and len(df_rec)>0:
+            row_min_dg = df_rec.loc[df_rec["diferencia_goles"].idxmin()].to_dict()
+        show_match_record("Derrota más abultada", row_min_dg)
+
+        st.divider()
+        st.subheader("Remontadas y giros de marcador")
+
+        # Remontadas usando goles al descanso si existen
+        def compute_remontada_df(dfin: pd.DataFrame):
+            needed = {"goles_descanso_valencia","goles_descanso_rival","goles_valencia","goles_rival"}
+            if not needed.issubset(set(dfin.columns)):
+                return None
+            dfu = dfin.copy()
+            for c in list(needed):
+                dfu[c] = pd.to_numeric(dfu[c], errors="coerce")
+            dfu["delta_final"] = dfu["goles_valencia"] - dfu["goles_rival"]
+            dfu["delta_descanso"] = dfu["goles_descanso_valencia"] - dfu["goles_descanso_rival"]
+            dfu["cambio"] = dfu["delta_final"] - dfu["delta_descanso"]
+            return dfu
+
+        df_rem = compute_remontada_df(df_rec)
+
+        row_max_remonta = None
+        if df_rem is not None and len(df_rem)>0:
+            row_max_remonta = df_rem.loc[df_rem["cambio"].idxmax()].to_dict()
+        show_match_record("Mayor remontada a favor (del descanso al final)", row_max_remonta)
+
+        row_max_remontado = None
+        if df_rem is not None and len(df_rem)>0:
+            row_max_remontado = df_rem.loc[df_rem["cambio"].idxmin()].to_dict()
+        show_match_record("Mayor remontada sufrida (del descanso al final)", row_max_remontado)
+
+        if df_rem is not None and "temporada" in df_rem.columns:
+            tmp = df_rem.assign(remonto = (df_rem["cambio"]>0))
+            byt = tmp.groupby("temporada")["remonto"].sum().reset_index(name="Remontadas")
+            if len(byt)>0:
+                top_row = byt.loc[byt["Remontadas"].idxmax()]
+                st.write(f"**Temporada con más remontadas a favor:** {top_row['temporada']} · Remontadas: {int(top_row['Remontadas'])}")
+
+        st.divider()
+        st.subheader("Contexto temporal")
+
+        # horas
+        if "hora" in df_rec.columns and df_rec["hora"].notna().any():
+            # intentar parseo hora -> datetime.time
+            hparsed = pd.to_datetime(df_rec["hora"], errors="coerce").dt.time
+            dfh = df_rec.assign(_hora=hparsed).dropna(subset=["_hora"])
+            if len(dfh)>0:
+                row_early = dfh.loc[dfh["_hora"].astype(str).idxmin()].to_dict()
+                show_match_record("Partido más temprano", row_early)
+                row_late = dfh.loc[dfh["_hora"].astype(str).idxmax()].to_dict()
+                show_match_record("Partido más tardío", row_late)
+
+        # franja con más victorias (tasa)
+        if "franja" in df_rec.columns and "puntos" in df_rec.columns and df_rec["franja"].notna().any():
+            res = (pd.to_numeric(df_rec["puntos"], errors="coerce") == 3)
+            t = df_rec.assign(V=res).groupby("franja").agg(PJ=("V","count"), V=("V","sum")).reset_index()
+            t["%Victorias"] = np.where(t["PJ"]>0, t["V"]/t["PJ"]*100, np.nan)
+            t = t.sort_values("%Victorias", ascending=False)
+            if len(t)>0:
+                st.write(f"**Franja con mayor % de victorias:** {t.iloc[0]['franja']} · {t.iloc[0]['%Victorias']:.1f}% (PJ: {int(t.iloc[0]['PJ'])})")
+
+        # temporada más goleadora (GF total)
+        if "temporada" in df_rec.columns and "goles_valencia" in df_rec.columns and len(df_rec)>0:
+            tmp = df_rec.groupby("temporada")["goles_valencia"].sum().reset_index()
+            top = tmp.loc[tmp["goles_valencia"].idxmax()]
+            st.write(f"**Temporada más goleadora (goles a favor):** {top['temporada']} · Goles: {int(top['goles_valencia'])}")
+
+        st.divider()
+        st.subheader("Rival")
+
+        if "rival" in df_rec.columns and len(df_rec)>0:
+            # promedios por rival
+            agg = df_rec.groupby("rival").agg(
+                PJ=("puntos","count"),
+                GF=("goles_valencia","mean"),
+                GC=("goles_rival","mean"),
+                PPG=("puntos","mean")
+            ).reset_index()
+            # umbral mínimo de partidos para evitar sesgos
+            agg = agg[agg["PJ"]>=3] if "PJ" in agg.columns else agg
+
+            if len(agg)>0:
+                r_gf = agg.loc[agg["GF"].idxmax()]
+                st.write(f"**Rival más goleado (promedio GF):** {r_gf['rival']} · GF medio: {r_gf['GF']:.2f} (PJ: {int(r_gf['PJ'])})")
+                r_gc = agg.loc[agg["GC"].idxmax()]
+                st.write(f"**Rival que más goles nos hace (promedio GC):** {r_gc['rival']} · GC medio: {r_gc['GC']:.2f} (PJ: {int(r_gc['PJ'])})")
+                r_ppg = agg.loc[agg["PPG"].idxmax()]
+                st.write(f"**Mejor Puntos por partido (PPG) contra un rival:** {r_ppg['rival']} · PPG: {r_ppg['PPG']:.2f} (PJ: {int(r_ppg['PJ'])})")
+
+        st.divider()
+        st.subheader("Curiosidades adicionales")
+
+        # Mejor rendimiento por temporada (PPG)
+        if "temporada" in df_rec.columns and "puntos" in df_rec.columns and len(df_rec)>0:
+            by_t = df_rec.groupby("temporada").agg(Puntos=("puntos","sum"), PJ=("puntos","count")).reset_index()
+            by_t["PPG"] = by_t["Puntos"]/by_t["PJ"]
+            best = by_t.loc[by_t["PPG"].idxmax()]
+            st.write(f"**Temporada con mejor Puntos por partido (PPG):** {best['temporada']} · PPG: {best['PPG']:.2f}")
+
+        # Temporada con más derrotas
+        res = None
+        if "resultado_valencia" in df_rec.columns:
+            res = df_rec["resultado_valencia"].astype(str).str.lower().str.startswith("der")
+        elif "puntos" in df_rec.columns:
+            res = (pd.to_numeric(df_rec["puntos"], errors="coerce") == 0)
+        if res is not None and "temporada" in df_rec.columns:
+            tmp = df_rec.assign(D=res).groupby("temporada")["D"].sum().reset_index(name="Derrotas")
+            if len(tmp)>0:
+                tmin = tmp.loc[tmp["Derrotas"].idxmax()]
+                st.write(f"**Temporada con más derrotas:** {tmin['temporada']} · Derrotas: {int(tmin['Derrotas'])}")
+
+        # Empates 0-0
+        if "goles_valencia" in df_rec.columns and "goles_rival" in df_rec.columns:
+            emp00 = df_rec[(pd.to_numeric(df_rec["goles_valencia"], errors="coerce")==0) & (pd.to_numeric(df_rec["goles_rival"], errors="coerce")==0)]
+            st.write(f"**Empates 0-0:** {len(emp00)}")
+
+        # Porterías a cero
+        if "goles_rival" in df_rec.columns:
+            clean = (pd.to_numeric(df_rec["goles_rival"], errors="coerce")==0).sum()
+            st.write(f"**Porterías a cero (rival no marca):** {int(clean)}")
+
+        # Victorias por goleada (3+ DG)
+        if "diferencia_goles" in df_rec.columns:
+            goleadas = (pd.to_numeric(df_rec['diferencia_goles'], errors="coerce")>=3).sum()
+            st.write(f"**Victorias por 3+ goles de diferencia:** {int(goleadas)}")
