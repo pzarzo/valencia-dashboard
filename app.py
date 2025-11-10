@@ -271,6 +271,8 @@ with tab_resumen:
         st.info("No hay partidos con los filtros actuales.")
 
 # ======= Rivales =======
+
+with tab_rivales:
    # --- Base H2H coherente con Ida/Vuelta ---
     df_h2h = df.copy()
     if "vuelta" in df_h2h.columns:
