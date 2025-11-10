@@ -271,42 +271,52 @@ with tab_resumen:
         st.info("No hay partidos con los filtros actuales.")
 
 # ======= Rivales =======
-
-# --- Base H2H coherente con Ida/Vuelta ---
+    # --- Base H2H coherente con Ida/Vuelta ---
 df_h2h = df.copy()
 if "vuelta" in df_h2h.columns:
-    if sel_vuelta:  # si el usuario eligió Ida/Vuelta, respétalo
+    if sel_vuelta:  # respeta la selección del sidebar
         df_h2h = df_h2h[df_h2h["vuelta"].isin(sel_vuelta)]
     else:
         # sin selección, excluye NaN/etiquetas raras para que cuadre con Ida+Vuelta
         df_h2h = df_h2h[df_h2h["vuelta"].isin(["Ida", "Vuelta"])]
-    
-    # A partir de aquí, TODO H2H trabaja con df_h2h
-df_rank = df_h2h.copy()
-res_s = infer_result_series(df_rank)
-df_rank = df_rank.assign(Res=res_s)
-    
-agg = df_rank.groupby("rival").agg(
-    PJ=("puntos", "count"),
-    Puntos=("puntos", "sum"),
-    GF=("goles_valencia", "sum"),
-    GC=("goles_rival", "sum"),
-    V=("Res", lambda s: (s == "V").sum()),
-    E=("Res", lambda s: (s == "E").sum()),
-    D=("Res", lambda s: (s == "D").sum()),
-    ).reset_index()
-    agg["PPG"] = agg["Puntos"] / agg["PJ"]
-    agg["DG"] = agg["GF"] - agg["GC"]
-    agg["%V"] = np.where(agg["PJ"] > 0, agg["V"] / agg["PJ"] * 100, np.nan)
-    agg = agg.sort_values(by=["PJ", "PPG"], ascending=[False, False])
-    
-    rivals_list = agg["rival"].tolist()
-    if len(rivals_list) == 0:
-        st.info("No hay rivales para mostrar con los filtros actuales.")
-        st.stop()
 
-    rival_sel = st.selectbox("Elige un rival", rivals_list, index=0)
-    df_rival = df_h2h[df_h2h["rival"] == rival_sel]
+# Si no hay datos, muestra aviso y no rompas el tab
+if df_h2h.empty or "rival" not in df_h2h.columns:
+    st.info("No hay partidos que cumplan los filtros actuales.")
+    # evita st.stop(); deja que el tab continúe y quede el aviso visible
+else:
+    # Desplegable alimentado directamente por los rivales disponibles
+    rivals_list = sorted(df_h2h["rival"].dropna().unique().tolist())
+    if len(rivals_list) == 0:
+        st.info("No hay rivales que cumplan los filtros actuales.")
+    else:
+        rival_sel = st.selectbox("Elige un rival", rivals_list, index=0)
+
+        # Subconjunto del rival elegido
+        df_rival = df_h2h[df_h2h["rival"] == rival_sel]
+
+        # Ranking/aggregado (usa df_h2h; y para el bloque del rival, df_rival)
+        df_rank = df_h2h.copy()
+        res_s = infer_result_series(df_rank)
+        df_rank = df_rank.assign(Res=res_s)
+
+        agg = df_rank.groupby("rival").agg(
+            PJ=("puntos", "count"),
+            Puntos=("puntos", "sum"),
+            GF=("goles_valencia", "sum"),
+            GC=("goles_rival", "sum"),
+            V=("Res", lambda s: (s == "V").sum()),
+            E=("Res", lambda s: (s == "E").sum()),
+            D=("Res", lambda s: (s == "D").sum()),
+        ).reset_index()
+        agg["PPG"] = agg["Puntos"] / agg["PJ"]
+        agg["DG"] = agg["GF"] - agg["GC"]
+        agg["%V"] = np.where(agg["PJ"] > 0, agg["V"] / agg["PJ"] * 100, np.nan)
+        agg = agg.sort_values(by=["PJ", "PPG"], ascending=[False, False])
+
+        # (A partir de aquí continúa tu código de KPIs/tabla/gráficos con df_rival y agg)
+
+   
 
     k_rival = compute_kpis(df_rival)
     c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
