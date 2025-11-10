@@ -272,28 +272,28 @@ with tab_resumen:
 
 # ======= Rivales =======
 
-    # --- Base H2H coherente con Ida/Vuelta ---
-    df_h2h = df.copy()
-    if "vuelta" in df_h2h.columns:
-        if sel_vuelta:  # si el usuario eligió Ida/Vuelta, respétalo
-            df_h2h = df_h2h[df_h2h["vuelta"].isin(sel_vuelta)]
-        else:
-            # sin selección, excluye NaN/etiquetas raras para que cuadre con Ida+Vuelta
-            df_h2h = df_h2h[df_h2h["vuelta"].isin(["Ida", "Vuelta"])]
+# --- Base H2H coherente con Ida/Vuelta ---
+df_h2h = df.copy()
+if "vuelta" in df_h2h.columns:
+    if sel_vuelta:  # si el usuario eligió Ida/Vuelta, respétalo
+        df_h2h = df_h2h[df_h2h["vuelta"].isin(sel_vuelta)]
+    else:
+        # sin selección, excluye NaN/etiquetas raras para que cuadre con Ida+Vuelta
+        df_h2h = df_h2h[df_h2h["vuelta"].isin(["Ida", "Vuelta"])]
     
     # A partir de aquí, TODO H2H trabaja con df_h2h
-    df_rank = df_h2h.copy()
-    res_s = infer_result_series(df_rank)
-    df_rank = df_rank.assign(Res=res_s)
+df_rank = df_h2h.copy()
+res_s = infer_result_series(df_rank)
+df_rank = df_rank.assign(Res=res_s)
     
-    agg = df_rank.groupby("rival").agg(
-        PJ=("puntos", "count"),
-        Puntos=("puntos", "sum"),
-        GF=("goles_valencia", "sum"),
-        GC=("goles_rival", "sum"),
-        V=("Res", lambda s: (s == "V").sum()),
-        E=("Res", lambda s: (s == "E").sum()),
-        D=("Res", lambda s: (s == "D").sum()),
+agg = df_rank.groupby("rival").agg(
+    PJ=("puntos", "count"),
+    Puntos=("puntos", "sum"),
+    GF=("goles_valencia", "sum"),
+    GC=("goles_rival", "sum"),
+    V=("Res", lambda s: (s == "V").sum()),
+    E=("Res", lambda s: (s == "E").sum()),
+    D=("Res", lambda s: (s == "D").sum()),
     ).reset_index()
     agg["PPG"] = agg["Puntos"] / agg["PJ"]
     agg["DG"] = agg["GF"] - agg["GC"]
